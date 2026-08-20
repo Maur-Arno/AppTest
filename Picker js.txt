@@ -1,0 +1,168 @@
+Picker js
+
+/* =========================================================
+   BAFLOCATOR - LOCATION PICKER
+   ========================================================= */
+
+.location-picker {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+}
+
+
+/* =========================================================
+   CARTE
+   ========================================================= */
+
+.location-picker-map {
+    width: 100%;
+    height: 300px;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    border: 1px solid #dfe3e8;
+
+    background: #eef2f4;
+
+    z-index: 1;
+}
+
+
+/* =========================================================
+   INSTRUCTIONS
+   ========================================================= */
+
+.location-picker-help {
+    margin: 14px 0 0;
+
+    color: #667085;
+
+    font-size: 14px;
+    line-height: 1.5;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   POSITION
+   ========================================================= */
+
+.location-picker-coordinates {
+    margin-top: 14px;
+
+    padding: 13px 15px;
+
+    display: flex;
+    flex-direction: column;
+
+    gap: 5px;
+
+    border-radius: 12px;
+
+    background: #f7f8fa;
+
+    border: 1px solid #eaecf0;
+}
+
+.location-picker-coordinates span {
+    color: #667085;
+
+    font-size: 13px;
+}
+
+.location-picker-coordinates strong {
+    color: #17202a;
+
+    font-family: monospace;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   VALIDATION
+   ========================================================= */
+
+.location-picker-validate {
+    width: 100%;
+    height: 50px;
+
+    margin-top: 20px;
+
+    border: none;
+
+    border-radius: 13px;
+
+    background: #1f6feb;
+
+    color: #ffffff;
+
+    font-size: 15px;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+}
+
+.location-picker-validate:hover {
+    opacity: 0.92;
+
+    transform: translateY(-1px);
+}
+
+.location-picker-validate:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   LEAFLET
+   ========================================================= */
+
+.location-picker-map .leaflet-container {
+    width: 100%;
+    height: 100%;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .location-picker-map {
+        height: 260px;
+    }
+
+    .location-picker-help {
+        font-size: 13px;
+    }
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+    .location-picker-map {
+        height: 350px;
+    }
+}

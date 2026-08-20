@@ -1,0 +1,189 @@
+Location picker
+
+@using Microsoft.JSInterop
+
+@inject IJSRuntime JS
+
+<div class="location-picker">
+
+    <!-- ================================================
+         CARTE
+         ================================================ -->
+
+    <div id="@MapId"
+         class="location-picker-map">
+    </div>
+
+
+    <!-- ================================================
+         INSTRUCTION
+         ================================================ -->
+
+    <p class="location-picker-help">
+        Déplacez le repère sur votre bâtiment.
+    </p>
+
+
+    <!-- ================================================
+         COORDONNÉES
+         ================================================ -->
+
+    @if (Latitude.HasValue && Longitude.HasValue)
+    {
+        <div class="location-picker-coordinates">
+
+            <span>📍 Position actuelle</span>
+
+            <strong>
+                @Latitude.Value.ToString("0.######"),
+                @Longitude.Value.ToString("0.######")
+            </strong>
+
+        </div>
+    }
+
+
+    <!-- ================================================
+         VALIDATION
+         ================================================ -->
+
+    <button class="location-picker-validate"
+            @onclick="ValidatePosition">
+
+        Valider
+
+    </button>
+
+</div>
+
+
+@code {
+
+    // =====================================================
+    // Paramètres
+    // =====================================================
+
+    [Parameter]
+    public double InitialLatitude { get; set; }
+
+    [Parameter]
+    public double InitialLongitude { get; set; }
+
+
+    [Parameter]
+    public double Zoom { get; set; } = 18;
+
+
+    [Parameter]
+    public EventCallback<LocationPosition> OnPositionValidated { get; set; }
+
+
+    // =====================================================
+    // État
+    // =====================================================
+
+    private double? Latitude { get; set; }
+
+    private double? Longitude { get; set; }
+
+
+    private string MapId { get; } =
+        $"location-map-{Guid.NewGuid():N}";
+
+
+    private bool _mapInitialized;
+
+
+    // =====================================================
+    // Initialisation
+    // =====================================================
+
+    protected override void OnParametersSet()
+    {
+        Latitude = InitialLatitude;
+        Longitude = InitialLongitude;
+    }
+
+
+    protected override async Task OnAfterRenderAsync(
+        bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _mapInitialized = true;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorLocationPicker.initialize",
+            MapId,
+            InitialLatitude,
+            InitialLongitude,
+            Zoom,
+            DotNetObjectReference.Create(this));
+    }
+
+
+    // =====================================================
+    // Appelé par JavaScript après déplacement
+    // =====================================================
+
+    [JSInvokable]
+    public void MarkerMoved(
+        double latitude,
+        double longitude)
+    {
+        Latitude = latitude;
+        Longitude = longitude;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+
+    // =====================================================
+    // Validation
+    // =====================================================
+
+    private async Task ValidatePosition()
+    {
+        if (!Latitude.HasValue ||
+            !Longitude.HasValue)
+        {
+            return;
+        }
+
+        var position = new LocationPosition
+        {
+            Latitude = Latitude.Value,
+            Longitude = Longitude.Value
+        };
+
+        await OnPositionValidated.InvokeAsync(position);
+    }
+
+
+    // =====================================================
+    // Nettoyage
+    // =====================================================
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!_mapInitialized)
+            return;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorLocationPicker.dispose",
+            MapId);
+    }
+
+
+    // =====================================================
+    // Modèle
+    // =====================================================
+
+    public sealed class LocationPosition
+    {
+        public double Latitude { get; init; }
+
+        public double Longitude { get; init; }
+    }
+}

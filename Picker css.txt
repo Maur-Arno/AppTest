@@ -1,0 +1,112 @@
+Picker css
+
+window.baflocatorLocationPicker = {
+
+    maps: {},
+
+    initialize: function (
+        mapId,
+        latitude,
+        longitude,
+        zoom,
+        dotNetReference) {
+
+        const element =
+            document.getElementById(mapId);
+
+        if (!element) {
+            console.error(
+                "Carte introuvable : " + mapId);
+
+            return;
+        }
+
+
+        // ================================================
+        // Création de la carte
+        // ================================================
+
+        const map = L.map(mapId).setView(
+            [latitude, longitude],
+            zoom
+        );
+
+
+        // ================================================
+        // OpenStreetMap
+        // ================================================
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 21,
+
+                attribution:
+                    '&copy; <a href="https://www.openstreetmap.org/copyright">' +
+                    'OpenStreetMap</a>'
+            }
+        ).addTo(map);
+
+
+        // ================================================
+        // Marqueur
+        // ================================================
+
+        const marker = L.marker(
+            [latitude, longitude],
+            {
+                draggable: true
+            }
+        ).addTo(map);
+
+
+        // ================================================
+        // Déplacement du marqueur
+        // ================================================
+
+        marker.on(
+            "dragend",
+            function () {
+
+                const position =
+                    marker.getLatLng();
+
+                dotNetReference.invokeMethodAsync(
+                    "MarkerMoved",
+                    position.lat,
+                    position.lng
+                );
+            }
+        );
+
+
+        // ================================================
+        // Stockage
+        // ================================================
+
+        this.maps[mapId] = {
+            map: map,
+            marker: marker,
+            dotNetReference: dotNetReference
+        };
+    },
+
+
+    // ================================================
+    // Suppression
+    // ================================================
+
+    dispose: function (mapId) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+        instance.map.remove();
+
+        delete this.maps[mapId];
+    }
+};
