@@ -1,0 +1,483 @@
+Location 2
+
+@using Baflocator.Models
+@using Microsoft.JSInterop
+
+@inject IJSRuntime JS
+@inject Baflocator.Services.ILocationService LocationService
+
+<div class="location-picker">
+
+    <!-- =====================================================
+         CARTE
+         ===================================================== -->
+
+    <div id="@MapId"
+         class="location-picker-map">
+    </div>
+
+
+    <!-- =====================================================
+         POSITION GPS
+         ===================================================== -->
+
+    <div class="location-picker-position">
+
+        <div class="position-header">
+
+            <span>
+                📍 Position actuelle
+            </span>
+
+            @if (IsLocating)
+            {
+                <span class="position-status">
+                    Localisation...
+                </span>
+            }
+
+        </div>
+
+
+        @if (Latitude.HasValue && Longitude.HasValue)
+        {
+            <div class="coordinates">
+
+                <span>
+                    @Latitude.Value.ToString("0.######")
+                </span>
+
+                <span>
+                    @Longitude.Value.ToString("0.######")
+                </span>
+
+            </div>
+        }
+
+    </div>
+
+
+    <!-- =====================================================
+         PRÉCISION
+         ===================================================== -->
+
+    @if (AccuracyMeters.HasValue)
+    {
+        <div class="gps-accuracy">
+
+            <span>
+                Précision GPS
+            </span>
+
+            <strong>
+                @AccuracyMeters.Value.ToString("0.#") m
+            </strong>
+
+        </div>
+    }
+
+
+    <!-- =====================================================
+         AVERTISSEMENT DOUBLON
+         ===================================================== -->
+
+    @if (NearbyPlace is not null)
+    {
+        <div class="nearby-place-warning">
+
+            <div class="warning-title">
+                ⚠ Adresse potentiellement existante
+            </div>
+
+            <div class="warning-distance">
+                Un lieu se trouve à
+                <strong>
+                    @NearbyDistanceMeters?.ToString("0.0") m
+                </strong>.
+            </div>
+
+            <div class="warning-place">
+
+                <strong>
+                    @NearbyPlace.Name
+                </strong>
+
+                <span>
+                    @NearbyPlace.Reference
+                </span>
+
+            </div>
+
+        </div>
+    }
+
+
+    <!-- =====================================================
+         INSTRUCTION
+         ===================================================== -->
+
+    <p class="location-picker-help">
+        Déplacez le repère sur votre bâtiment.
+    </p>
+
+
+    <!-- =====================================================
+         ACTIONS
+         ===================================================== -->
+
+    <div class="location-picker-actions">
+
+        <button class="locate-button"
+                @onclick="LocateUser"
+                disabled="@IsLocating">
+
+            @if (IsLocating)
+            {
+                <span>📍 Localisation...</span>
+            }
+            else
+            {
+                <span>📍 Me localiser</span>
+            }
+
+        </button>
+
+
+        <button class="validate-button"
+                @onclick="ValidatePosition"
+                disabled="@(!CanValidate)">
+
+            Valider
+
+        </button>
+
+    </div>
+
+</div>
+
+
+@code {
+
+    // =========================================================
+    // PARAMETERS
+    // =========================================================
+
+    [Parameter]
+    public double InitialLatitude { get; set; }
+
+    [Parameter]
+    public double InitialLongitude { get; set; }
+
+
+    [Parameter]
+    public double Zoom { get; set; } = 18;
+
+
+    /// <summary>
+    /// Rayon de recherche des lieux existants.
+    /// </summary>
+    [Parameter]
+    public double DuplicateRadiusMeters { get; set; } = 10;
+
+
+    [Parameter]
+    public EventCallback<LocationPosition>
+        OnPositionChanged { get; set; }
+
+
+    [Parameter]
+    public EventCallback<LocationPosition>
+        OnPositionValidated { get; set; }
+
+
+    // =========================================================
+    // STATE
+    // =========================================================
+
+    private double? Latitude { get; set; }
+
+    private double? Longitude { get; set; }
+
+    private double? AccuracyMeters { get; set; }
+
+    private bool IsLocating { get; set; }
+
+    private bool IsCheckingNearby { get; set; }
+
+
+    private NearbyPlaceDto? NearbyPlace { get; set; }
+
+    private double? NearbyDistanceMeters { get; set; }
+
+
+    private bool CanValidate =>
+        Latitude.HasValue &&
+        Longitude.HasValue &&
+        !IsLocating &&
+        !IsCheckingNearby;
+
+
+    private string MapId { get; } =
+        $"location-map-{Guid.NewGuid():N}";
+
+
+    private DotNetObjectReference<LocationPicker>?
+        _dotNetReference;
+
+
+    // =========================================================
+    // INITIALISATION
+    // =========================================================
+
+    protected override void OnInitialized()
+    {
+        Latitude = InitialLatitude;
+        Longitude = InitialLongitude;
+    }
+
+
+    protected override async Task OnAfterRenderAsync(
+        bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _dotNetReference =
+            DotNetObjectReference.Create(this);
+
+        await JS.InvokeVoidAsync(
+            "baflocatorLocationPicker.initialize",
+            MapId,
+            InitialLatitude,
+            InitialLongitude,
+            Zoom,
+            _dotNetReference);
+    }
+
+
+    // =========================================================
+    // MARQUEUR DÉPLACÉ
+    // =========================================================
+
+    [JSInvokable]
+    public async Task MarkerMoved(
+        double latitude,
+        double longitude)
+    {
+        await UpdatePositionAsync(
+            latitude,
+            longitude,
+            AccuracyMeters);
+    }
+
+
+    // =========================================================
+    // POSITION GPS
+    // =========================================================
+
+    [JSInvokable]
+    public async Task CurrentPositionReceived(
+        double latitude,
+        double longitude,
+        double accuracy)
+    {
+        Latitude = latitude;
+
+        Longitude = longitude;
+
+        AccuracyMeters = accuracy;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorLocationPicker.setMarkerPosition",
+            MapId,
+            latitude,
+            longitude,
+            true);
+
+        await CheckNearbyPlacesAsync();
+
+        await NotifyPositionChangedAsync();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    // =========================================================
+    // LOCALISATION
+    // =========================================================
+
+    private async Task LocateUser()
+    {
+        if (IsLocating)
+            return;
+
+        IsLocating = true;
+
+        NearbyPlace = null;
+        NearbyDistanceMeters = null;
+
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "baflocatorLocationPicker.locateUser",
+                MapId,
+                _dotNetReference);
+        }
+        catch
+        {
+            // TODO : afficher une erreur de géolocalisation
+        }
+        finally
+        {
+            IsLocating = false;
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+
+    // =========================================================
+    // MISE À JOUR POSITION
+    // =========================================================
+
+    private async Task UpdatePositionAsync(
+        double latitude,
+        double longitude,
+        double? accuracy)
+    {
+        Latitude = latitude;
+
+        Longitude = longitude;
+
+        if (accuracy.HasValue)
+        {
+            AccuracyMeters = accuracy;
+        }
+
+        NearbyPlace = null;
+
+        NearbyDistanceMeters = null;
+
+        await CheckNearbyPlacesAsync();
+
+        await NotifyPositionChangedAsync();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    // =========================================================
+    // RECHERCHE LIEU PROCHE
+    // =========================================================
+
+    private async Task CheckNearbyPlacesAsync()
+    {
+        if (!Latitude.HasValue ||
+            !Longitude.HasValue)
+        {
+            return;
+        }
+
+        IsCheckingNearby = true;
+
+        try
+        {
+            var position = new LocationPosition
+            {
+                Latitude = Latitude.Value,
+
+                Longitude = Longitude.Value,
+
+                AccuracyMeters = AccuracyMeters
+            };
+
+            var result =
+                await LocationService.FindNearbyPlaceAsync(
+                    position,
+                    DuplicateRadiusMeters);
+
+            if (result.IsPotentialDuplicate &&
+                result.ExistingPlace is not null)
+            {
+                NearbyPlace =
+                    result.ExistingPlace;
+
+                NearbyDistanceMeters =
+                    result.DistanceMeters;
+            }
+        }
+        finally
+        {
+            IsCheckingNearby = false;
+        }
+    }
+
+
+    // =========================================================
+    // NOTIFICATION POSITION
+    // =========================================================
+
+    private async Task NotifyPositionChangedAsync()
+    {
+        if (!Latitude.HasValue ||
+            !Longitude.HasValue)
+        {
+            return;
+        }
+
+        await OnPositionChanged.InvokeAsync(
+            new LocationPosition
+            {
+                Latitude = Latitude.Value,
+
+                Longitude = Longitude.Value,
+
+                AccuracyMeters = AccuracyMeters
+            });
+    }
+
+
+    // =========================================================
+    // VALIDATION
+    // =========================================================
+
+    private async Task ValidatePosition()
+    {
+        if (!CanValidate)
+            return;
+
+        var position = new LocationPosition
+        {
+            Latitude = Latitude!.Value,
+
+            Longitude = Longitude!.Value,
+
+            AccuracyMeters = AccuracyMeters
+        };
+
+        await OnPositionValidated
+            .InvokeAsync(position);
+    }
+
+
+    // =========================================================
+    // DISPOSE
+    // =========================================================
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "baflocatorLocationPicker.dispose",
+                MapId);
+        }
+        catch
+        {
+            // Le composant peut être détruit
+            // avant que JS soit disponible.
+        }
+
+        _dotNetReference?.Dispose();
+    }
+}

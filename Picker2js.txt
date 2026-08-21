@@ -1,0 +1,313 @@
+Picker 2 js
+
+window.baflocatorLocationPicker = {
+
+    maps: {},
+
+
+    // ========================================================
+    // INITIALISATION
+    // ========================================================
+
+    initialize: function (
+        mapId,
+        latitude,
+        longitude,
+        zoom,
+        dotNetReference) {
+
+        const element =
+            document.getElementById(mapId);
+
+        if (!element) {
+            return;
+        }
+
+
+        const map = L.map(mapId, {
+            zoomControl: true,
+            attributionControl: true
+        }).setView(
+            [latitude, longitude],
+            zoom
+        );
+
+
+        // ====================================================
+        // OpenStreetMap
+        // ====================================================
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 21,
+
+                attribution:
+                    '&copy; OpenStreetMap contributors'
+            }
+        ).addTo(map);
+
+
+        // ====================================================
+        // MARQUEUR
+        // ====================================================
+
+        const marker =
+            L.marker(
+                [latitude, longitude],
+                {
+                    draggable: true
+                }
+            ).addTo(map);
+
+
+        // ====================================================
+        // DÉPLACEMENT MARQUEUR
+        // ====================================================
+
+        marker.on(
+            "dragend",
+            function () {
+
+                const position =
+                    marker.getLatLng();
+
+                dotNetReference.invokeMethodAsync(
+                    "MarkerMoved",
+                    position.lat,
+                    position.lng
+                );
+            }
+        );
+
+
+        // ====================================================
+        // CLIC SUR LA CARTE
+        // ====================================================
+
+        map.on(
+            "click",
+            function (event) {
+
+                const latitude =
+                    event.latlng.lat;
+
+                const longitude =
+                    event.latlng.lng;
+
+                marker.setLatLng([
+                    latitude,
+                    longitude
+                ]);
+
+                dotNetReference.invokeMethodAsync(
+                    "MarkerMoved",
+                    latitude,
+                    longitude
+                );
+            }
+        );
+
+
+        // ====================================================
+        // STOCKAGE
+        // ====================================================
+
+        this.maps[mapId] = {
+
+            map: map,
+
+            marker: marker,
+
+            accuracyCircle: null,
+
+            userLocationMarker: null,
+
+            dotNetReference: dotNetReference
+        };
+    },
+
+
+    // ========================================================
+    // GÉOLOCALISATION
+    // ========================================================
+
+    locateUser: function (
+        mapId,
+        dotNetReference) {
+
+        if (!navigator.geolocation) {
+
+            console.error(
+                "La géolocalisation n'est pas disponible.");
+
+            return;
+        }
+
+
+        navigator.geolocation.getCurrentPosition(
+
+            function (position) {
+
+                const latitude =
+                    position.coords.latitude;
+
+                const longitude =
+                    position.coords.longitude;
+
+                const accuracy =
+                    position.coords.accuracy;
+
+
+                dotNetReference.invokeMethodAsync(
+                    "CurrentPositionReceived",
+                    latitude,
+                    longitude,
+                    accuracy
+                );
+            },
+
+            function (error) {
+
+                console.error(
+                    "Erreur GPS :",
+                    error.message
+                );
+            },
+
+            {
+                enableHighAccuracy: true,
+
+                timeout: 15000,
+
+                maximumAge: 0
+            }
+        );
+    },
+
+
+    // ========================================================
+    // POSITION DU MARQUEUR
+    // ========================================================
+
+    setMarkerPosition: function (
+        mapId,
+        latitude,
+        longitude,
+        centerMap) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        const position = [
+            latitude,
+            longitude
+        ];
+
+
+        instance.marker.setLatLng(
+            position
+        );
+
+
+        // ====================================================
+        // Cercle de précision
+        // ====================================================
+
+        if (instance.accuracyCircle) {
+
+            instance.accuracyCircle.setLatLng(
+                position
+            );
+
+        }
+
+
+        if (centerMap) {
+
+            instance.map.setView(
+                position,
+                instance.map.getZoom()
+            );
+        }
+    },
+
+
+    // ========================================================
+    // CERCLE DE PRÉCISION GPS
+    // ========================================================
+
+    setAccuracy: function (
+        mapId,
+        latitude,
+        longitude,
+        accuracy) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        const position = [
+            latitude,
+            longitude
+        ];
+
+
+        if (!instance.accuracyCircle) {
+
+            instance.accuracyCircle =
+                L.circle(
+                    position,
+                    {
+                        radius: accuracy,
+
+                        fillOpacity: 0.15,
+
+                        weight: 1
+                    }
+                ).addTo(
+                    instance.map
+                );
+
+        }
+        else {
+
+            instance.accuracyCircle.setLatLng(
+                position
+            );
+
+            instance.accuracyCircle.setRadius(
+                accuracy
+            );
+        }
+    },
+
+
+    // ========================================================
+    // SUPPRESSION
+    // ========================================================
+
+    dispose: function (mapId) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        instance.map.remove();
+
+        delete this.maps[mapId];
+    }
+};

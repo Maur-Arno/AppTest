@@ -1,0 +1,280 @@
+Picker 2 css
+
+/* =========================================================
+   BAFLOCATOR - LOCATION PICKER
+   ========================================================= */
+
+.location-picker {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+
+    color: #17202a;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+}
+
+
+/* =========================================================
+   CARTE
+   ========================================================= */
+
+.location-picker-map {
+    width: 100%;
+    height: 300px;
+
+    overflow: hidden;
+
+    border: 1px solid #dfe3e8;
+
+    border-radius: 16px;
+
+    background: #eef2f4;
+}
+
+
+/* =========================================================
+   POSITION
+   ========================================================= */
+
+.location-picker-position {
+    margin-top: 15px;
+
+    padding: 13px 15px;
+
+    border: 1px solid #eaecf0;
+
+    border-radius: 12px;
+
+    background: #f8f9fa;
+}
+
+.position-header {
+    display: flex;
+    justify-content: space-between;
+
+    font-size: 13px;
+}
+
+.position-status {
+    color: #1f6feb;
+
+    font-weight: 700;
+}
+
+.coordinates {
+    display: flex;
+
+    gap: 8px;
+
+    margin-top: 6px;
+
+    font-family: monospace;
+
+    font-size: 14px;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   PRÉCISION
+   ========================================================= */
+
+.gps-accuracy {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-top: 10px;
+
+    padding: 10px 14px;
+
+    border-radius: 10px;
+
+    background: #eef8f2;
+
+    color: #475467;
+
+    font-size: 13px;
+}
+
+.gps-accuracy strong {
+    color: #1a7f46;
+
+    font-weight: 800;
+}
+
+
+/* =========================================================
+   DOUBLON
+   ========================================================= */
+
+.nearby-place-warning {
+    margin-top: 14px;
+
+    padding: 15px;
+
+    border: 1px solid #f0d48a;
+
+    border-radius: 12px;
+
+    background: #fff9e6;
+}
+
+.warning-title {
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.warning-distance {
+    margin-top: 5px;
+
+    color: #667085;
+
+    font-size: 13px;
+}
+
+.warning-place {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+
+    margin-top: 10px;
+}
+
+.warning-place strong {
+    font-size: 14px;
+}
+
+.warning-place span {
+    color: #667085;
+
+    font-family: monospace;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   INSTRUCTION
+   ========================================================= */
+
+.location-picker-help {
+    margin: 14px 0 0;
+
+    color: #667085;
+
+    font-size: 13px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.location-picker-actions {
+    display: flex;
+
+    gap: 10px;
+
+    margin-top: 20px;
+}
+
+.locate-button,
+.validate-button {
+    height: 50px;
+
+    border-radius: 12px;
+
+    font-size: 14px;
+    font-weight: 750;
+
+    cursor: pointer;
+}
+
+.locate-button {
+    flex: 1;
+
+    border: 1px solid #d0d5dd;
+
+    background: #ffffff;
+
+    color: #17202a;
+}
+
+.locate-button:hover:not(:disabled) {
+    background: #f9fafb;
+}
+
+.validate-button {
+    flex: 1.2;
+
+    border: none;
+
+    background: #1f6feb;
+
+    color: #ffffff;
+}
+
+.validate-button:hover:not(:disabled) {
+    opacity: 0.92;
+}
+
+.locate-button:disabled,
+.validate-button:disabled {
+    opacity: 0.5;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================================================
+   LEAFLET
+   ========================================================= */
+
+.location-picker-map .leaflet-container {
+    width: 100%;
+    height: 100%;
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .location-picker-map {
+        height: 260px;
+    }
+
+    .location-picker-actions {
+        flex-direction: column;
+    }
+
+    .locate-button,
+    .validate-button {
+        width: 100%;
+    }
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+    .location-picker-map {
+        height: 350px;
+    }
+}
