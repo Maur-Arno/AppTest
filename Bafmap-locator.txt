@@ -1,0 +1,719 @@
+namespace Baflocator.Models;
+
+public sealed class MapPlace
+{
+    public long Id { get; init; }
+
+    public string Reference { get; init; }
+        = string.Empty;
+
+    public string Name { get; init; }
+        = string.Empty;
+
+    public string Category { get; init; }
+        = string.Empty;
+
+    public string District { get; init; }
+        = string.Empty;
+
+    public double Latitude { get; init; }
+
+    public double Longitude { get; init; }
+}
+
+
+
+
+
+
+
+
+
+@using Baflocator.Models
+@using Microsoft.JSInterop
+
+@inject IJSRuntime JS
+
+<div class="baflocator-map">
+
+    <div id="@MapId"
+         class="baflocator-map-container">
+    </div>
+
+</div>
+
+@code {
+
+    // =========================================================
+    // PARAMETERS
+    // =========================================================
+
+    [Parameter]
+    public double Latitude { get; set; }
+
+    [Parameter]
+    public double Longitude { get; set; }
+
+    [Parameter]
+    public int Zoom { get; set; } = 15;
+
+
+    [Parameter]
+    public IEnumerable<MapPlace> Places { get; set; }
+        = Enumerable.Empty<MapPlace>();
+
+
+    [Parameter]
+    public bool ShowUserLocation { get; set; } = true;
+
+
+    [Parameter]
+    public bool ShowZoomControls { get; set; } = true;
+
+
+    [Parameter]
+    public EventCallback<MapPlace>
+        OnPlaceSelected { get; set; }
+
+
+    [Parameter]
+    public EventCallback<LocationPosition>
+        OnUserLocationReceived { get; set; }
+
+
+    // =========================================================
+    // STATE
+    // =========================================================
+
+    private string MapId { get; } =
+        $"baflocator-map-{Guid.NewGuid():N}";
+
+
+    private DotNetObjectReference<BaflocatorMap>?
+        _dotNetReference;
+
+
+    private bool _initialized;
+
+    private IReadOnlyList<MapPlace> _places = [];
+
+
+    // =========================================================
+    // INITIALISATION
+    // =========================================================
+
+    protected override void OnParametersSet()
+    {
+        _places =
+            Places?.ToList()
+            ?? [];
+    }
+
+
+    protected override async Task OnAfterRenderAsync(
+        bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _dotNetReference =
+            DotNetObjectReference.Create(this);
+
+        _initialized = true;
+
+        await InitializeMapAsync();
+    }
+
+
+    private async Task InitializeMapAsync()
+    {
+        await JS.InvokeVoidAsync(
+            "baflocatorMap.initialize",
+            MapId,
+            Latitude,
+            Longitude,
+            Zoom,
+            ShowZoomControls,
+            ShowUserLocation,
+            _dotNetReference);
+
+
+        await UpdateMarkersAsync();
+    }
+
+
+    // =========================================================
+    // MARKERS
+    // =========================================================
+
+    private async Task UpdateMarkersAsync()
+    {
+        if (!_initialized)
+            return;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorMap.setPlaces",
+            MapId,
+            _places);
+    }
+
+
+    // =========================================================
+    // PARAMÈTRES MODIFIÉS
+    // =========================================================
+
+    protected override async Task OnAfterRenderAsync(
+        bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetReference =
+                DotNetObjectReference.Create(this);
+
+            _initialized = true;
+
+            await InitializeMapAsync();
+
+            return;
+        }
+
+        await UpdateMarkersAsync();
+    }
+
+
+    // =========================================================
+    // PLACE SELECTED
+    // =========================================================
+
+    [JSInvokable]
+    public async Task PlaceSelected(long placeId)
+    {
+        var place =
+            _places.FirstOrDefault(
+                x => x.Id == placeId);
+
+        if (place is null)
+            return;
+
+        await OnPlaceSelected
+            .InvokeAsync(place);
+    }
+
+
+    // =========================================================
+    // POSITION UTILISATEUR
+    // =========================================================
+
+    public async Task LocateUser()
+    {
+        if (!_initialized)
+            return;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorMap.locateUser",
+            MapId,
+            _dotNetReference);
+    }
+
+
+    [JSInvokable]
+    public async Task UserLocationReceived(
+        double latitude,
+        double longitude,
+        double accuracy)
+    {
+        await OnUserLocationReceived
+            .InvokeAsync(
+                new LocationPosition
+                {
+                    Latitude = latitude,
+
+                    Longitude = longitude,
+
+                    AccuracyMeters = accuracy
+                });
+    }
+
+
+    // =========================================================
+    // CENTRER LA CARTE
+    // =========================================================
+
+    public async Task CenterOn(
+        double latitude,
+        double longitude,
+        int? zoom = null)
+    {
+        if (!_initialized)
+            return;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorMap.centerOn",
+            MapId,
+            latitude,
+            longitude,
+            zoom ?? Zoom);
+    }
+
+
+    // =========================================================
+    // DISPOSE
+    // =========================================================
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "baflocatorMap.dispose",
+                MapId);
+        }
+        catch
+        {
+        }
+
+        _dotNetReference?.Dispose();
+    }
+
+
+    // =========================================================
+    // MODELE POSITION
+    // =========================================================
+
+    public sealed class LocationPosition
+    {
+        public double Latitude { get; init; }
+
+        public double Longitude { get; init; }
+
+        public double AccuracyMeters { get; init; }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+window.baflocatorMap = {
+
+    maps: {},
+
+
+    // ========================================================
+    // INITIALIZE
+    // ========================================================
+
+    initialize: function (
+        mapId,
+        latitude,
+        longitude,
+        zoom,
+        showZoomControls,
+        showUserLocation,
+        dotNetReference) {
+
+        const element =
+            document.getElementById(mapId);
+
+        if (!element) {
+            return;
+        }
+
+
+        const map =
+            L.map(mapId, {
+
+                zoomControl:
+                    showZoomControls,
+
+                attributionControl: true
+
+            }).setView(
+                [latitude, longitude],
+                zoom
+            );
+
+
+        // ====================================================
+        // OPEN STREET MAP
+        // ====================================================
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 21,
+
+                attribution:
+                    '&copy; OpenStreetMap contributors'
+            }
+        ).addTo(map);
+
+
+        // ====================================================
+        // STORAGE
+        // ====================================================
+
+        this.maps[mapId] = {
+
+            map: map,
+
+            markers: {},
+
+            userMarker: null,
+
+            accuracyCircle: null,
+
+            dotNetReference:
+                dotNetReference,
+
+            showUserLocation:
+                showUserLocation
+        };
+    },
+
+
+    // ========================================================
+    // SET PLACES
+    // ========================================================
+
+    setPlaces: function (
+        mapId,
+        places) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        // Supprimer les anciens marqueurs
+
+        Object.values(
+            instance.markers
+        ).forEach(function (marker) {
+
+            instance.map.removeLayer(
+                marker
+            );
+
+        });
+
+
+        instance.markers = {};
+
+
+        // Ajouter les nouveaux
+
+        places.forEach(
+            function (place) {
+
+                const marker =
+                    L.marker([
+                        place.latitude,
+                        place.longitude
+                    ]);
+
+
+                marker.addTo(
+                    instance.map
+                );
+
+
+                // ==========================================
+                // POPUP
+                // ==========================================
+
+                const popup = `
+                    <div class="baflocator-map-popup">
+
+                        <div class="popup-category">
+                            ${place.category ?? ""}
+                        </div>
+
+                        <div class="popup-name">
+                            ${place.name}
+                        </div>
+
+                        <div class="popup-reference">
+                            ${place.reference}
+                        </div>
+
+                        <div class="popup-district">
+                            📍 ${place.district}
+                        </div>
+
+                        <button
+                            class="popup-button"
+                            onclick="
+                                window.baflocatorMap
+                                    .selectPlace(
+                                        '${mapId}',
+                                        ${place.id}
+                                    )
+                            ">
+                            Voir la fiche
+                        </button>
+
+                    </div>
+                `;
+
+
+                marker.bindPopup(
+                    popup
+                );
+
+
+                instance.markers[
+                    place.id
+                ] = marker;
+            }
+        );
+    },
+
+
+    // ========================================================
+    // SELECT PLACE
+    // ========================================================
+
+    selectPlace: function (
+        mapId,
+        placeId) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        const marker =
+            instance.markers[placeId];
+
+        if (marker) {
+
+            marker.openPopup();
+
+            instance.map.panTo(
+                marker.getLatLng()
+            );
+        }
+
+
+        instance.dotNetReference
+            .invokeMethodAsync(
+                "PlaceSelected",
+                Number(placeId)
+            );
+    },
+
+
+    // ========================================================
+    // LOCALISATION
+    // ========================================================
+
+    locateUser: function (
+        mapId,
+        dotNetReference) {
+
+        if (!navigator.geolocation) {
+
+            console.error(
+                "Géolocalisation indisponible."
+            );
+
+            return;
+        }
+
+
+        navigator.geolocation.getCurrentPosition(
+
+            function (position) {
+
+                const latitude =
+                    position.coords.latitude;
+
+                const longitude =
+                    position.coords.longitude;
+
+                const accuracy =
+                    position.coords.accuracy;
+
+
+                const instance =
+                    window.baflocatorMap
+                        .maps[mapId];
+
+
+                if (!instance) {
+                    return;
+                }
+
+
+                const positionLatLng =
+                    [latitude, longitude];
+
+
+                // =========================================
+                // USER MARKER
+                // =========================================
+
+                if (!instance.userMarker) {
+
+                    instance.userMarker =
+                        L.marker(
+                            positionLatLng
+                        ).addTo(
+                            instance.map
+                        );
+
+                }
+                else {
+
+                    instance.userMarker
+                        .setLatLng(
+                            positionLatLng
+                        );
+                }
+
+
+                // =========================================
+                // CERCLE PRÉCISION
+                // =========================================
+
+                if (!instance.accuracyCircle) {
+
+                    instance.accuracyCircle =
+                        L.circle(
+                            positionLatLng,
+                            {
+                                radius:
+                                    accuracy,
+
+                                fillOpacity:
+                                    0.15,
+
+                                weight:
+                                    1
+                            }
+                        ).addTo(
+                            instance.map
+                        );
+
+                }
+                else {
+
+                    instance.accuracyCircle
+                        .setLatLng(
+                            positionLatLng
+                        );
+
+                    instance.accuracyCircle
+                        .setRadius(
+                            accuracy
+                        );
+                }
+
+
+                // =========================================
+                // CENTRAGE
+                // =========================================
+
+                instance.map.setView(
+                    positionLatLng,
+                    Math.max(
+                        instance.map.getZoom(),
+                        17
+                    )
+                );
+
+
+                // =========================================
+                // C#
+                // =========================================
+
+                dotNetReference
+                    .invokeMethodAsync(
+                        "UserLocationReceived",
+                        latitude,
+                        longitude,
+                        accuracy
+                    );
+            },
+
+
+            function (error) {
+
+                console.error(
+                    "Erreur GPS :",
+                    error.message
+                );
+
+            },
+
+
+            {
+                enableHighAccuracy: true,
+
+                timeout: 15000,
+
+                maximumAge: 0
+            }
+        );
+    },
+
+
+    // ========================================================
+    // CENTER
+    // ========================================================
+
+    centerOn: function (
+        mapId,
+        latitude,
+        longitude,
+        zoom) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        instance.map.setView(
+            [latitude, longitude],
+            zoom
+        );
+    },
+
+
+    // ========================================================
+    // DISPOSE
+    // ========================================================
+
+    dispose: function (mapId) {
+
+        const instance =
+            this.maps[mapId];
+
+        if (!instance) {
+            return;
+        }
+
+
+        instance.map.remove();
+
+        delete this.maps[mapId];
+    }
+};

@@ -1,0 +1,1047 @@
+/* =========================================================
+   BAFLOCATOR MAP COMPONENT
+   ========================================================= */
+
+.baflocator-map {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    overflow: hidden;
+}
+
+
+.baflocator-map-container {
+    width: 100%;
+    height: 100%;
+
+    min-height: 300px;
+}
+
+
+/* =========================================================
+   POPUP
+   ========================================================= */
+
+.baflocator-map-popup {
+    min-width: 190px;
+
+    padding: 4px;
+}
+
+
+.popup-category {
+    margin-bottom: 4px;
+
+    color: #667085;
+
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+
+.popup-name {
+    color: #17202a;
+
+    font-size: 15px;
+    font-weight: 800;
+}
+
+
+.popup-reference {
+    margin-top: 4px;
+
+    color: #667085;
+
+    font-family: monospace;
+
+    font-size: 11px;
+}
+
+
+.popup-district {
+    margin-top: 6px;
+
+    color: #475467;
+
+    font-size: 12px;
+}
+
+
+.popup-button {
+    width: 100%;
+
+    margin-top: 10px;
+
+    padding: 8px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #1f6feb;
+
+    color: #ffffff;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   LEAFLET
+   ========================================================= */
+
+.baflocator-map-container
+    .leaflet-container {
+
+    width: 100%;
+    height: 100%;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+@page "/map"
+
+@using Baflocator.Models
+
+@inject NavigationManager NavigationManager
+
+<PageTitle>Carte - Baflocator</PageTitle>
+
+<div class="map-view">
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="map-view-header">
+
+        <button class="map-back-button"
+                @onclick="GoBack">
+
+            ←
+
+        </button>
+
+        <h1>
+            Bafoussam
+        </h1>
+
+    </header>
+
+
+    <!-- =====================================================
+         RECHERCHE
+         ===================================================== -->
+
+    <section class="map-search-container">
+
+        <div class="map-search-box">
+
+            <span class="map-search-icon">
+                🔎
+            </span>
+
+            <input type="text"
+                   value="@SearchText"
+                   @oninput="OnSearchChanged"
+                   placeholder="Rechercher un lieu"
+                   autocomplete="off" />
+
+            @if (!string.IsNullOrWhiteSpace(SearchText))
+            {
+                <button class="clear-search-button"
+                        @onclick="ClearSearch">
+
+                    ×
+
+                </button>
+            }
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         SUGGESTIONS
+         ===================================================== -->
+
+    @if (SearchResults.Count > 0)
+    {
+        <div class="map-search-results">
+
+            @foreach (var place in SearchResults)
+            {
+                <button class="map-search-result"
+                        @onclick="() => SelectSearchResult(place)">
+
+                    <div class="result-icon">
+                        📍
+                    </div>
+
+                    <div class="result-content">
+
+                        <strong>
+                            @place.Name
+                        </strong>
+
+                        <span>
+                            @place.Reference
+                        </span>
+
+                        <small>
+                            @place.District
+                        </small>
+
+                    </div>
+
+                </button>
+            }
+
+        </div>
+    }
+
+
+    <!-- =====================================================
+         CARTE
+         ===================================================== -->
+
+    <main class="map-view-content">
+
+        <BaflocatorMap
+            @ref="BaflocatorMap"
+            Latitude="@CenterLatitude"
+            Longitude="@CenterLongitude"
+            Zoom="15"
+            Places="@Places"
+            ShowUserLocation="true"
+            ShowZoomControls="true"
+            OnPlaceSelected="OnPlaceSelected"
+            OnUserLocationReceived="OnUserLocationReceived" />
+
+    </main>
+
+
+    <!-- =====================================================
+         ACTIONS
+         ===================================================== -->
+
+    <footer class="map-view-actions">
+
+        <button class="map-action-button"
+                @onclick="LocateUser">
+
+            <span>
+                📍
+            </span>
+
+            <span>
+                Ma position
+            </span>
+
+        </button>
+
+
+        <button class="map-action-button"
+                @onclick="ShowList">
+
+            <span>
+                ☷
+            </span>
+
+            <span>
+                Liste
+            </span>
+
+        </button>
+
+    </footer>
+
+</div>
+
+
+@code {
+
+    // =========================================================
+    // COMPONENT
+    // =========================================================
+
+    private BaflocatorMap? BaflocatorMap;
+
+
+    // =========================================================
+    // MAP CENTER
+    // =========================================================
+
+    private double CenterLatitude { get; set; }
+        = 5.473921;
+
+    private double CenterLongitude { get; set; }
+        = 10.417832;
+
+
+    // =========================================================
+    // SEARCH
+    // =========================================================
+
+    private string SearchText { get; set; }
+        = string.Empty;
+
+
+    private List<MapPlace> SearchResults { get; set; }
+        = [];
+
+
+    // =========================================================
+    // PLACES
+    // =========================================================
+
+    private List<MapPlace> Places { get; set; }
+        = [];
+
+
+    // =========================================================
+    // INITIALISATION
+    // =========================================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPlacesAsync();
+    }
+
+
+    private async Task LoadPlacesAsync()
+    {
+        /*
+         * TODO :
+         *
+         * Remplacer par ton service/API :
+         *
+         * Places =
+         *     await PlaceService
+         *         .GetNearbyAsync(
+         *             CenterLatitude,
+         *             CenterLongitude,
+         *             radius);
+         */
+
+        await Task.Delay(100);
+
+
+        Places =
+        [
+            new MapPlace
+            {
+                Id = 1,
+
+                Reference =
+                    "BAF-DJE-C-000125",
+
+                Name =
+                    "Restaurant La Paix",
+
+                Category =
+                    "Restaurant",
+
+                District =
+                    "Djeleng",
+
+                Latitude =
+                    5.473921,
+
+                Longitude =
+                    10.417832
+            },
+
+            new MapPlace
+            {
+                Id = 2,
+
+                Reference =
+                    "BAF-KAM-C-000126",
+
+                Name =
+                    "Boutique Mboa",
+
+                Category =
+                    "Boutique",
+
+                District =
+                    "Kamkop",
+
+                Latitude =
+                    5.475200,
+
+                Longitude =
+                    10.419100
+            },
+
+            new MapPlace
+            {
+                Id = 3,
+
+                Reference =
+                    "BAF-DJE-C-000127",
+
+                Name =
+                    "Pharmacie Djeleng",
+
+                Category =
+                    "Pharmacie",
+
+                District =
+                    "Djeleng",
+
+                Latitude =
+                    5.472600,
+
+                Longitude =
+                    10.415800
+            },
+
+            new MapPlace
+            {
+                Id = 4,
+
+                Reference =
+                    "BAF-KAM-C-000128",
+
+                Name =
+                    "Hôtel Mboa",
+
+                Category =
+                    "Hôtel",
+
+                District =
+                    "Kamkop",
+
+                Latitude =
+                    5.476200,
+
+                Longitude =
+                    10.421000
+            }
+        ];
+    }
+
+
+    // =========================================================
+    // SEARCH
+    // =========================================================
+
+    private void OnSearchChanged(
+        ChangeEventArgs args)
+    {
+        SearchText =
+            args.Value?.ToString()
+            ?? string.Empty;
+
+
+        if (string.IsNullOrWhiteSpace(
+            SearchText))
+        {
+            SearchResults.Clear();
+
+            return;
+        }
+
+
+        var search =
+            SearchText.Trim();
+
+
+        SearchResults =
+            Places
+                .Where(x =>
+                    x.Name.Contains(
+                        search,
+                        StringComparison
+                            .OrdinalIgnoreCase)
+
+                    ||
+
+                    x.Reference.Contains(
+                        search,
+                        StringComparison
+                            .OrdinalIgnoreCase)
+
+                    ||
+
+                    x.District.Contains(
+                        search,
+                        StringComparison
+                            .OrdinalIgnoreCase))
+                .Take(5)
+                .ToList();
+    }
+
+
+    private void ClearSearch()
+    {
+        SearchText =
+            string.Empty;
+
+        SearchResults.Clear();
+    }
+
+
+    // =========================================================
+    // SEARCH RESULT
+    // =========================================================
+
+    private async Task SelectSearchResult(
+        MapPlace place)
+    {
+        SearchText =
+            place.Name;
+
+        SearchResults.Clear();
+
+        CenterLatitude =
+            place.Latitude;
+
+        CenterLongitude =
+            place.Longitude;
+
+
+        if (BaflocatorMap is not null)
+        {
+            await BaflocatorMap.CenterOn(
+                place.Latitude,
+                place.Longitude,
+                18);
+        }
+    }
+
+
+    // =========================================================
+    // MAP PLACE SELECTED
+    // =========================================================
+
+    private void OnPlaceSelected(
+        MapPlace place)
+    {
+        NavigationManager.NavigateTo(
+            $"/adresse/{place.Reference}");
+    }
+
+
+    // =========================================================
+    // USER LOCATION
+    // =========================================================
+
+    private async Task LocateUser()
+    {
+        if (BaflocatorMap is null)
+            return;
+
+        await BaflocatorMap.LocateUser();
+    }
+
+
+    private Task OnUserLocationReceived(
+        BaflocatorMap.LocationPosition position)
+    {
+        CenterLatitude =
+            position.Latitude;
+
+        CenterLongitude =
+            position.Longitude;
+
+        return InvokeAsync(
+            StateHasChanged);
+    }
+
+
+    // =========================================================
+    // LISTE
+    // =========================================================
+
+    private void ShowList()
+    {
+        NavigationManager.NavigateTo(
+            "/adresses");
+    }
+
+
+    // =========================================================
+    // BACK
+    // =========================================================
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================================
+   BAFLOCATOR - MAP VIEW
+   ========================================================= */
+
+.map-view {
+    position: relative;
+
+    width: 100%;
+    height: 100vh;
+
+    min-height: 600px;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    background: #ffffff;
+
+    color: #17202a;
+
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        sans-serif;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.map-view-header {
+    height: 60px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 18px;
+
+    gap: 8px;
+
+    background: #ffffff;
+
+    border-bottom: 1px solid #eaecf0;
+
+    z-index: 1000;
+}
+
+
+.map-view-header h1 {
+    margin: 0;
+
+    font-size: 18px;
+    font-weight: 800;
+}
+
+
+.map-back-button {
+    width: 40px;
+    height: 40px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #17202a;
+
+    font-size: 25px;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   SEARCH
+   ========================================================= */
+
+.map-search-container {
+    position: absolute;
+
+    top: 72px;
+    left: 16px;
+    right: 16px;
+
+    z-index: 1001;
+}
+
+
+.map-search-box {
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 13px;
+
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    border: 1px solid #e4e7ec;
+
+    box-shadow:
+        0 4px 15px
+        rgba(16, 24, 40, 0.12);
+}
+
+
+.map-search-icon {
+    margin-right: 9px;
+
+    font-size: 17px;
+}
+
+
+.map-search-box input {
+    flex: 1;
+
+    width: 100%;
+
+    border: none;
+
+    outline: none;
+
+    background: transparent;
+
+    color: #17202a;
+
+    font-size: 14px;
+}
+
+
+.map-search-box input::placeholder {
+    color: #98a2b3;
+}
+
+
+.clear-search-button {
+    width: 28px;
+    height: 28px;
+
+    padding: 0;
+
+    border: none;
+
+    border-radius: 50%;
+
+    background: #f2f4f7;
+
+    color: #667085;
+
+    font-size: 18px;
+
+    cursor: pointer;
+}
+
+
+/* =========================================================
+   SEARCH RESULTS
+   ========================================================= */
+
+.map-search-results {
+    position: absolute;
+
+    top: 128px;
+    left: 16px;
+    right: 16px;
+
+    z-index: 1002;
+
+    overflow: hidden;
+
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    border: 1px solid #eaecf0;
+
+    box-shadow:
+        0 8px 25px
+        rgba(16, 24, 40, 0.15);
+}
+
+
+.map-search-result {
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    padding: 12px 14px;
+
+    border: none;
+
+    border-bottom: 1px solid #f2f4f7;
+
+    background: #ffffff;
+
+    text-align: left;
+
+    cursor: pointer;
+}
+
+
+.map-search-result:last-child {
+    border-bottom: none;
+}
+
+
+.map-search-result:hover {
+    background: #f9fafb;
+}
+
+
+.result-icon {
+    font-size: 20px;
+}
+
+
+.result-content {
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+}
+
+
+.result-content strong {
+    overflow: hidden;
+
+    color: #17202a;
+
+    font-size: 13px;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+}
+
+
+.result-content span {
+    margin-top: 2px;
+
+    color: #667085;
+
+    font-family: monospace;
+
+    font-size: 10px;
+}
+
+
+.result-content small {
+    margin-top: 2px;
+
+    color: #98a2b3;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   CARTE
+   ========================================================= */
+
+.map-view-content {
+    position: relative;
+
+    flex: 1;
+
+    min-height: 0;
+
+    overflow: hidden;
+}
+
+
+.map-view-content
+    .baflocator-map {
+    height: 100%;
+}
+
+
+.map-view-content
+    .baflocator-map-container {
+    min-height: 0;
+}
+
+
+/* =========================================================
+   ACTIONS
+   ========================================================= */
+
+.map-view-actions {
+    position: absolute;
+
+    left: 16px;
+    right: 16px;
+    bottom: 18px;
+
+    z-index: 1000;
+
+    display: grid;
+
+    grid-template-columns:
+        1fr 1fr;
+
+    gap: 10px;
+
+    pointer-events: none;
+}
+
+
+.map-action-button {
+    height: 48px;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    gap: 7px;
+
+    border: 1px solid #e4e7ec;
+
+    border-radius: 13px;
+
+    background: #ffffff;
+
+    color: #17202a;
+
+    box-shadow:
+        0 5px 18px
+        rgba(16, 24, 40, 0.16);
+
+    font-size: 13px;
+    font-weight: 750;
+
+    cursor: pointer;
+
+    pointer-events: auto;
+}
+
+
+.map-action-button:hover {
+    background: #f9fafb;
+}
+
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 768px) {
+
+    .map-view-header {
+        height: 64px;
+    }
+
+
+    .map-search-container {
+        top: 78px;
+
+        left: 24px;
+
+        width: 420px;
+
+        right: auto;
+    }
+
+
+    .map-search-results {
+        top: 134px;
+
+        left: 24px;
+
+        width: 420px;
+
+        right: auto;
+    }
+
+
+    .map-view-actions {
+        left: auto;
+
+        right: 24px;
+
+        bottom: 24px;
+
+        width: 300px;
+    }
+}
+
+
+/* =========================================================
+   PETIT MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+
+    .map-view {
+        min-height: 100dvh;
+    }
+
+
+    .map-view-header {
+        height: 56px;
+    }
+
+
+    .map-search-container {
+        top: 66px;
+
+        left: 12px;
+        right: 12px;
+    }
+
+
+    .map-search-results {
+        top: 122px;
+
+        left: 12px;
+        right: 12px;
+    }
+
+
+    .map-view-actions {
+        left: 12px;
+        right: 12px;
+        bottom: 12px;
+    }
+}
