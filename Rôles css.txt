@@ -1,0 +1,401 @@
+Rôles css
+
+/* =========================================================
+   BAFLOCATOR — GESTION DES RÔLES
+   ========================================================= */
+
+.roles-page {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 20px 16px 32px;
+    box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.page-header > button {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 12px;
+    background: #f4f5f7;
+    color: #1f2937;
+    font-size: 22px;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.page-header > button:hover {
+    background: #e9ebef;
+}
+
+.page-header > button:active {
+    transform: scale(0.96);
+}
+
+.page-header h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 24px;
+    line-height: 1.25;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.page-header p {
+    margin: 6px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* =========================================================
+   LISTE DES RÔLES
+   ========================================================= */
+
+.roles-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* =========================================================
+   ROLE CARD
+   ========================================================= */
+
+.role-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 17px;
+    box-sizing: border-box;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease,
+        background-color 0.18s ease;
+}
+
+.role-card:hover {
+    border-color: #d1d5db;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+}
+
+.role-card:active {
+    transform: scale(0.99);
+    background: #fafafa;
+}
+
+/* =========================================================
+   ICÔNE
+   ========================================================= */
+
+.role-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+
+    border-radius: 14px;
+    background: #f3f4f6;
+
+    font-size: 23px;
+}
+
+/* =========================================================
+   CONTENU
+   ========================================================= */
+
+.role-content {
+    min-width: 0;
+    flex: 1;
+}
+
+.role-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.role-header h2 {
+    margin: 0;
+
+    color: #111827;
+    font-size: 16px;
+    line-height: 1.3;
+    font-weight: 650;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.role-content p {
+    margin: 5px 0 8px;
+
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.4;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =========================================================
+   NOMBRE D'UTILISATEURS
+   ========================================================= */
+
+.user-count {
+    display: inline-flex;
+    align-items: center;
+
+    color: #374151;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* =========================================================
+   FLÈCHE
+   ========================================================= */
+
+.arrow {
+    flex-shrink: 0;
+
+    color: #9ca3af;
+    font-size: 24px;
+    line-height: 1;
+
+    transition:
+        color 0.18s ease,
+        transform 0.18s ease;
+}
+
+.role-card:hover .arrow {
+    color: #4b5563;
+    transform: translateX(2px);
+}
+
+/* =========================================================
+   BOUTON NOUVEAU RÔLE
+   ========================================================= */
+
+.create-role {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+
+    width: 100%;
+    min-height: 64px;
+
+    margin-top: 20px;
+    padding: 12px 16px;
+
+    border: 1px dashed #cfd3d8;
+    border-radius: 16px;
+
+    background: #fafafa;
+    color: #374151;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.create-role:hover {
+    background: #f5f6f8;
+    border-color: #9ca3af;
+}
+
+.create-role:active {
+    transform: scale(0.99);
+}
+
+.create-role .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 36px;
+    height: 36px;
+
+    border-radius: 10px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+
+    font-size: 21px;
+    line-height: 1;
+}
+
+.create-role strong {
+    display: block;
+
+    text-align: left;
+
+    color: #1f2937;
+    font-size: 14px;
+    font-weight: 650;
+}
+
+.create-role small {
+    display: block;
+
+    margin-top: 2px;
+
+    color: #6b7280;
+    font-size: 12px;
+}
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (min-width: 640px) {
+
+    .roles-page {
+        padding: 28px 24px 40px;
+    }
+
+    .page-header h1 {
+        font-size: 26px;
+    }
+
+    .role-card {
+        padding: 18px 20px;
+    }
+
+    .role-icon {
+        flex-basis: 52px;
+        width: 52px;
+        height: 52px;
+    }
+}
+
+/* =========================================================
+   DESKTOP
+   ========================================================= */
+
+@media (min-width: 900px) {
+
+    .roles-page {
+        padding: 36px 32px 48px;
+    }
+
+    .page-header {
+        margin-bottom: 32px;
+    }
+
+    .page-header h1 {
+        font-size: 28px;
+    }
+
+    .page-header p {
+        font-size: 15px;
+    }
+
+    .roles-list {
+        gap: 14px;
+    }
+
+    .role-card {
+        padding: 20px 22px;
+        border-radius: 18px;
+    }
+
+    .role-icon {
+        flex-basis: 54px;
+        width: 54px;
+        height: 54px;
+        border-radius: 15px;
+    }
+
+    .role-header h2 {
+        font-size: 17px;
+    }
+
+    .role-content p {
+        font-size: 14px;
+    }
+
+    .create-role {
+        justify-content: flex-start;
+        width: auto;
+        min-width: 220px;
+        margin-top: 24px;
+    }
+}
+
+/* =========================================================
+   LARGE DESKTOP
+   ========================================================= */
+
+@media (min-width: 1200px) {
+
+    .roles-page {
+        max-width: 1200px;
+    }
+
+    .roles-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .create-role {
+        grid-column: 1 / -1;
+    }
+}
+
+/* =========================================================
+   ACCESSIBILITÉ
+   ========================================================= */
+
+.role-card:focus-visible,
+.create-role:focus-visible,
+.page-header > button:focus-visible {
+    outline: 3px solid rgba(59, 130, 246, 0.35);
+    outline-offset: 2px;
+}
+
+/* Réduction des animations si l'utilisateur le demande */
+
+@media (prefers-reduced-motion: reduce) {
+
+    .role-card,
+    .arrow,
+    .create-role,
+    .page-header > button {
+        transition: none;
+    }
+}

@@ -1,0 +1,302 @@
+MesDemandes
+
+@page "/mes-demandes"
+
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+@using Microsoft.JSInterop
+
+<PageTitle>Mes demandes - BAFLOCATOR</PageTitle>
+
+<div class="my-requests-page">
+
+    <!-- =====================================================
+         HEADER
+         ===================================================== -->
+
+    <header class="my-requests-header">
+
+        <button type="button"
+                class="back-button"
+                @onclick="GoBack"
+                aria-label="Retour">
+
+            ←
+
+        </button>
+
+        <h1>
+            Mes demandes
+        </h1>
+
+    </header>
+
+
+    <!-- =====================================================
+         CONTENT
+         ===================================================== -->
+
+    <main class="my-requests-content">
+
+        @if (Requests.Count == 0)
+        {
+            <section class="empty-state">
+
+                <div class="empty-icon">
+                    📍
+                </div>
+
+                <h2>
+                    Aucune demande
+                </h2>
+
+                <p>
+                    Vous n'avez encore envoyé aucune
+                    demande d'adresse.
+                </p>
+
+                <button type="button"
+                        class="add-address-button"
+                        @onclick="AddAddress">
+
+                    ➕ Ajouter une adresse
+
+                </button>
+
+            </section>
+        }
+        else
+        {
+            <section class="requests-list">
+
+                @foreach (var request in Requests)
+                {
+                    <article class="request-card"
+                             @onclick="() => OpenRequest(request)"
+                             role="button"
+                             tabindex="0">
+
+                        <!-- =================================
+                             INFORMATIONS
+                             ================================= -->
+
+                        <div class="request-main">
+
+                            <h2 class="request-place">
+                                @request.PlaceName
+                            </h2>
+
+                            @if (!string.IsNullOrWhiteSpace(
+                                request.Reference))
+                            {
+                                <div class="request-reference">
+                                    @request.Reference
+                                </div>
+                            }
+
+                        </div>
+
+
+                        <!-- =================================
+                             STATUT
+                             ================================= -->
+
+                        <div class="request-status
+                                    @GetStatusCssClass(request.Status)">
+
+                            <span class="status-dot"></span>
+
+                            <span>
+                                @GetStatusLabel(request.Status)
+                            </span>
+
+                        </div>
+
+
+                        <!-- =================================
+                             CHEVRON
+                             ================================= -->
+
+                        <div class="request-chevron">
+                            ›
+                        </div>
+
+                    </article>
+                }
+
+            </section>
+        }
+
+    </main>
+
+
+    <!-- =====================================================
+         FLOATING ACTION BUTTON
+         ===================================================== -->
+
+    <button type="button"
+            class="floating-add-button"
+            @onclick="AddAddress"
+            aria-label="Ajouter une adresse">
+
+        +
+
+    </button>
+
+</div>
+
+
+@code {
+
+    // =========================================================
+    // STATE
+    // =========================================================
+
+    private List<AddressRequest> Requests { get; set; }
+        = new();
+
+
+    // =========================================================
+    // INITIALIZATION
+    // =========================================================
+
+    protected override async Task OnInitializedAsync()
+    {
+        /*
+         * Dans la version réelle :
+         *
+         * Requests =
+         *     await RequestService
+         *         .GetMyRequestsAsync();
+         *
+         * Pour le moment, données de démonstration.
+         */
+
+        Requests = new List<AddressRequest>
+        {
+            new AddressRequest
+            {
+                Id = "REQ-00125",
+                PlaceName = "Restaurant La Paix",
+                Reference = "BAF-DJE-C-000125",
+                Status = RequestStatus.Pending
+            },
+
+            new AddressRequest
+            {
+                Id = "REQ-00126",
+                PlaceName = "Boutique Mboa",
+                Reference = "BAF-KAM-C-000126",
+                Status = RequestStatus.Validated
+            }
+        };
+
+        await Task.CompletedTask;
+    }
+
+
+    // =========================================================
+    // NAVIGATION
+    // =========================================================
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+
+    private void AddAddress()
+    {
+        NavigationManager.NavigateTo(
+            "/ajouter-adresse");
+    }
+
+
+    private void OpenRequest(AddressRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Id))
+            return;
+
+        NavigationManager.NavigateTo(
+            $"/mes-demandes/{request.Id}");
+    }
+
+
+    // =========================================================
+    // STATUS
+    // =========================================================
+
+    private static string GetStatusLabel(
+        RequestStatus status)
+    {
+        return status switch
+        {
+            RequestStatus.Pending =>
+                "En attente",
+
+            RequestStatus.Validated =>
+                "Validée",
+
+            RequestStatus.Rejected =>
+                "Rejetée",
+
+            RequestStatus.Merged =>
+                "Fusionnée",
+
+            _ =>
+                "Inconnue"
+        };
+    }
+
+
+    private static string GetStatusCssClass(
+        RequestStatus status)
+    {
+        return status switch
+        {
+            RequestStatus.Pending =>
+                "status-pending",
+
+            RequestStatus.Validated =>
+                "status-validated",
+
+            RequestStatus.Rejected =>
+                "status-rejected",
+
+            RequestStatus.Merged =>
+                "status-merged",
+
+            _ =>
+                string.Empty
+        };
+    }
+
+
+    // =========================================================
+    // MODEL
+    // =========================================================
+
+    private sealed class AddressRequest
+    {
+        public string Id { get; set; }
+            = string.Empty;
+
+        public string PlaceName { get; set; }
+            = string.Empty;
+
+        public string Reference { get; set; }
+            = string.Empty;
+
+        public RequestStatus Status { get; set; }
+    }
+
+
+    private enum RequestStatus
+    {
+        Pending,
+        Validated,
+        Rejected,
+        Merged
+    }
+}

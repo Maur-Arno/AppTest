@@ -1,0 +1,56 @@
+Rôles
+
+@page "/admin/roles"
+@attribute [Authorize(Roles = "Administrator")]
+
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Gestion des rôles</PageTitle>
+
+<div class="roles-page">
+
+    <header class="page-header">
+        <button @onclick="GoBack">
+            ←
+        </button>
+
+        <div>
+            <h1>Gestion des rôles</h1>
+            <p>
+                Gérez les rôles et les accès
+                des utilisateurs.
+            </p>
+        </div>
+    </header>
+
+    @if (_loading)
+    {
+        <Loading />
+    }
+    else
+    {
+        <section class="roles-list">
+
+            @foreach (var role in _roles)
+            {
+                <RoleCard
+                    Role="role"
+                    OnClick="OpenRole" />
+            }
+
+        </section>
+
+        <button class="create-role"
+                @onclick="CreateRole">
+
+            <span class="icon">＋</span>
+
+            <span>
+                <strong>Nouveau rôle</strong>
+                <small>Créer un nouveau rôle</small>
+            </span>
+
+        </button>
+    }
+
+</div>

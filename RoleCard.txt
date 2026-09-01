@@ -1,0 +1,30 @@
+RoleCard
+
+<div class="role-card"
+     @onclick="HandleClick">
+
+    <div class="role-icon">
+        @Role.Icon
+    </div>
+
+    <div class="role-content">
+
+        <div class="role-header">
+            <h2>@Role.Name</h2>
+
+            <span class="arrow">
+                ›
+            </span>
+        </div>
+
+        <p>
+            @Role.Description
+        </p>
+
+        <span class="user-count">
+            @Role.UserCount utilisateurs
+        </span>
+
+    </div>
+
+</div>

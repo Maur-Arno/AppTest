@@ -1,0 +1,409 @@
+Login
+
+@page "/connexion"
+
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<PageTitle>Connexion - BAFLOCATOR</PageTitle>
+
+<div class="login-page">
+
+    <main class="login-card">
+
+        <!-- ==================================================
+             LOGO / BRAND
+             ================================================== -->
+
+        <header class="login-header">
+
+            <div class="login-logo">
+                BAFLOCATOR
+            </div>
+
+            <p class="login-subtitle">
+                Votre adresse, simplement.
+            </p>
+
+        </header>
+
+
+        <!-- ==================================================
+             TITRE
+             ================================================== -->
+
+        <section class="login-title-section">
+
+            <h1>
+                Connexion
+            </h1>
+
+            <p>
+                Connectez-vous à votre compte
+            </p>
+
+        </section>
+
+
+        <!-- ==================================================
+             FORMULAIRE
+             ================================================== -->
+
+        <EditForm Model="@LoginModel"
+                  OnValidSubmit="@HandleLogin">
+
+            <DataAnnotationsValidator />
+
+
+            <!-- ==============================================
+                 IDENTIFIANT
+                 ============================================== -->
+
+            <div class="form-group">
+
+                <label for="identifier">
+                    Téléphone / Email
+                </label>
+
+                <div class="input-wrapper">
+
+                    <span class="input-icon">
+                        👤
+                    </span>
+
+                    <InputText id="identifier"
+                               class="form-input"
+                               @bind-Value="LoginModel.Identifier"
+                               autocomplete="username"
+                               placeholder="Téléphone ou adresse email" />
+
+                </div>
+
+                <ValidationMessage
+                    For="@(() => LoginModel.Identifier)" />
+
+            </div>
+
+
+            <!-- ==============================================
+                 MOT DE PASSE
+                 ============================================== -->
+
+            <div class="form-group">
+
+                <div class="password-label-row">
+
+                    <label for="password">
+                        Mot de passe
+                    </label>
+
+                </div>
+
+
+                <div class="input-wrapper">
+
+                    <span class="input-icon">
+                        🔒
+                    </span>
+
+                    <InputText id="password"
+                               type="@PasswordInputType"
+                               class="form-input password-input"
+                               @bind-Value="LoginModel.Password"
+                               autocomplete="current-password"
+                               placeholder="Votre mot de passe" />
+
+                    <button type="button"
+                            class="password-toggle"
+                            aria-label="Afficher ou masquer le mot de passe"
+                            @onclick="TogglePassword">
+
+                        @if (PasswordVisible)
+                        {
+                            <span>🙈</span>
+                        }
+                        else
+                        {
+                            <span>👁️</span>
+                        }
+
+                    </button>
+
+                </div>
+
+                <ValidationMessage
+                    For="@(() => LoginModel.Password)" />
+
+            </div>
+
+
+            <!-- ==============================================
+                 ERREUR
+                 ============================================== -->
+
+            @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+            {
+                <div class="login-error"
+                     role="alert">
+
+                    <span class="error-icon">
+                        ⚠️
+                    </span>
+
+                    <span>
+                        @ErrorMessage
+                    </span>
+
+                </div>
+            }
+
+
+            <!-- ==============================================
+                 CONNEXION
+                 ============================================== -->
+
+            <button type="submit"
+                    class="login-button"
+                    disabled="@IsLoading">
+
+                @if (IsLoading)
+                {
+                    <span class="login-spinner"></span>
+
+                    <span>
+                        Connexion...
+                    </span>
+                }
+                else
+                {
+                    <span>
+                        Se connecter
+                    </span>
+                }
+
+            </button>
+
+        </EditForm>
+
+
+        <!-- ==================================================
+             MOT DE PASSE OUBLIÉ
+             ================================================== -->
+
+        <div class="forgot-password">
+
+            <button type="button"
+                    @onclick="ForgotPassword">
+
+                Mot de passe oublié ?
+
+            </button>
+
+        </div>
+
+
+        <!-- ==================================================
+             SÉPARATEUR
+             ================================================== -->
+
+        <div class="login-divider">
+
+            <span></span>
+
+            <small>
+                Nouveau sur BAFLOCATOR ?
+            </small>
+
+            <span></span>
+
+        </div>
+
+
+        <!-- ==================================================
+             CREATION COMPTE
+             ================================================== -->
+
+        <div class="register-section">
+
+            <p>
+                Pas encore de compte ?
+            </p>
+
+            <button type="button"
+                    class="register-button"
+                    @onclick="CreateAccount">
+
+                Créer un compte
+
+            </button>
+
+        </div>
+
+
+        <!-- ==================================================
+             FOOTER
+             ================================================== -->
+
+        <footer class="login-footer">
+
+            <span>
+                © @DateTime.Now.Year BAFLOCATOR
+            </span>
+
+        </footer>
+
+    </main>
+
+</div>
+
+
+@code {
+
+    // =========================================================
+    // MODEL
+    // =========================================================
+
+    private LoginModel LoginModel { get; set; }
+        = new();
+
+
+    // =========================================================
+    // STATE
+    // =========================================================
+
+    private bool IsLoading { get; set; }
+
+    private bool PasswordVisible { get; set; }
+
+    private string? ErrorMessage { get; set; }
+
+
+    private string PasswordInputType =>
+        PasswordVisible
+            ? "text"
+            : "password";
+
+
+    // =========================================================
+    // LOGIN
+    // =========================================================
+
+    private async Task HandleLogin()
+    {
+        ErrorMessage = null;
+
+        IsLoading = true;
+
+        try
+        {
+            /*
+             * Ici tu appelleras ton service :
+             *
+             * var result =
+             *     await AuthService.LoginAsync(
+             *         LoginModel.Identifier,
+             *         LoginModel.Password);
+             *
+             * if (!result.Success)
+             * {
+             *     ErrorMessage =
+             *         result.ErrorMessage;
+             *
+             *     return;
+             * }
+             *
+             * NavigationManager.NavigateTo(
+             *     "/");
+             */
+
+
+            // Simulation temporaire
+            await Task.Delay(800);
+
+            if (LoginModel.Identifier
+                    != "admin"
+                ||
+                LoginModel.Password
+                    != "123456")
+            {
+                ErrorMessage =
+                    "Identifiant ou mot de passe incorrect.";
+
+                return;
+            }
+
+
+            NavigationManager.NavigateTo("/");
+        }
+        catch
+        {
+            ErrorMessage =
+                "Une erreur est survenue. Veuillez réessayer.";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+
+    // =========================================================
+    // PASSWORD
+    // =========================================================
+
+    private async Task TogglePassword()
+    {
+        PasswordVisible =
+            !PasswordVisible;
+
+        await JS.InvokeVoidAsync(
+            "baflocatorLogin.focusPassword");
+    }
+
+
+    // =========================================================
+    // FORGOT PASSWORD
+    // =========================================================
+
+    private void ForgotPassword()
+    {
+        NavigationManager.NavigateTo(
+            "/mot-de-passe-oublie");
+    }
+
+
+    // =========================================================
+    // CREATE ACCOUNT
+    // =========================================================
+
+    private void CreateAccount()
+    {
+        NavigationManager.NavigateTo(
+            "/inscription");
+    }
+
+
+    // =========================================================
+    // MODEL
+    // =========================================================
+
+    public sealed class LoginModel
+    {
+        [Required(
+            ErrorMessage =
+                "Le téléphone ou l'email est obligatoire.")]
+        public string Identifier { get; set; }
+            = string.Empty;
+
+
+        [Required(
+            ErrorMessage =
+                "Le mot de passe est obligatoire.")]
+        [MinLength(
+            6,
+            ErrorMessage =
+                "Le mot de passe doit contenir au moins 6 caractères.")]
+        public string Password { get; set; }
+            = string.Empty;
+    }
+}
